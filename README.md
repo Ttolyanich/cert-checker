@@ -8,6 +8,8 @@
   <img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="License" />
 </p>
 
+<img width="1294" height="460" alt="image" src="https://github.com/user-attachments/assets/4ac81152-81f6-4c1a-b5d0-2bebf1a9e75b" />
+
 **Cert-Checker** — это современная, легкая и невероятно быстрая система мониторинга сроков действия SSL/TLS-сертификатов. Она разработана для системных администраторов и DevOps-инженеров, которым нужен надежный инструмент для контроля инфраструктуры без избыточной сложности.
 
 Интерфейс спроектирован по канонам современных **SaaS-платформ (стиль Vercel & Linear)**: строгие прямоугольные формы, высокая контрастность, поддержка темной/светлой тем и плавная работа без перезагрузок страниц.
@@ -217,7 +219,7 @@ version: '3.8'
 
 services:
   backend:
-    image: ghcr.io/your-github-username/cert-checker-backend:latest
+    image: ghcr.io/ttolyanich/cert-checker-backend:latest
     container_name: cert-checker-backend
     restart: always
     environment:
@@ -230,7 +232,7 @@ services:
       - "8000:8000"
 
   frontend:
-    image: ghcr.io/your-github-username/cert-checker-frontend:latest
+    image: ghcr.io/ttolyanich/cert-checker-frontend:latest
     container_name: cert-checker-frontend
     restart: always
     ports:
