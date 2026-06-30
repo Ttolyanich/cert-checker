@@ -40,18 +40,28 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [fetchSites]);
 
+  // Helper: Parse date string safely as UTC if it lacks timezone info
+  const parseDateSafely = (dateString) => {
+    if (!dateString) return null;
+    // If it doesn't end with Z and doesn't contain a timezone offset (+ or - after the time part)
+    if (!dateString.endsWith('Z') && !/[-+]\d{2}:?\d{2}$/.test(dateString)) {
+      return new Date(dateString + 'Z');
+    }
+    return new Date(dateString);
+  };
+
   // Helper: Calculate remaining days
   const getDaysRemaining = (validTo) => {
     if (!validTo) return null;
-    const diffTime = new Date(validTo) - new Date();
+    const diffTime = parseDateSafely(validTo) - new Date();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
   // Helper: Calculate certificate lifetime progress percentage
   const getLifetimeProgress = (validFrom, validTo) => {
     if (!validFrom || !validTo) return 0;
-    const start = new Date(validFrom).getTime();
-    const end = new Date(validTo).getTime();
+    const start = parseDateSafely(validFrom).getTime();
+    const end = parseDateSafely(validTo).getTime();
     const now = new Date().getTime();
     
     if (now >= end) return 0;
@@ -65,7 +75,7 @@ const Dashboard = () => {
   // Helper: Format date
   const formatDate = (dateString) => {
     if (!dateString) return '—';
-    return new Date(dateString).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US', {
+    return parseDateSafely(dateString).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -75,7 +85,7 @@ const Dashboard = () => {
   // Helper: Format last checked time
   const formatLastChecked = (dateString) => {
     if (!dateString) return t('db_status_unchecked');
-    const diffMs = new Date() - new Date(dateString);
+    const diffMs = new Date() - parseDateSafely(dateString);
     const diffMins = Math.floor(diffMs / 60000);
     
     if (diffMins < 1) return t('db_checked_just_now');

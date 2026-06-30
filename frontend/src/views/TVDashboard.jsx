@@ -38,16 +38,25 @@ const TVDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Helper: Parse date string safely as UTC if it lacks timezone info
+  const parseDateSafely = (dateString) => {
+    if (!dateString) return null;
+    if (!dateString.endsWith('Z') && !/[-+]\d{2}:?\d{2}$/.test(dateString)) {
+      return new Date(dateString + 'Z');
+    }
+    return new Date(dateString);
+  };
+
   const getDaysRemaining = (validTo) => {
     if (!validTo) return null;
-    const diffTime = new Date(validTo) - new Date();
+    const diffTime = parseDateSafely(validTo) - new Date();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
   const getLifetimeProgress = (validFrom, validTo) => {
     if (!validFrom || !validTo) return 0;
-    const start = new Date(validFrom).getTime();
-    const end = new Date(validTo).getTime();
+    const start = parseDateSafely(validFrom).getTime();
+    const end = parseDateSafely(validTo).getTime();
     const now = new Date().getTime();
     
     if (now >= end) return 0;
@@ -77,7 +86,7 @@ const TVDashboard = () => {
 
   const formatSimpleDate = (dateString) => {
     if (!dateString) return '—';
-    return new Date(dateString).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US', {
+    return parseDateSafely(dateString).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
