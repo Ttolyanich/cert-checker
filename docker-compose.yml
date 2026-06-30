@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cert-checker-backend
+    restart: always
+    environment:
+      - DATABASE_URL=sqlite:////data/cert_checker.db
+      - SECRET_KEY=prod_super_secret_key_change_me_in_env_file
+      - ZABBIX_TOKEN=zabbix_secret_token
+      # - SMTP_HOST=smtp.mail.ru
+      # - SMTP_PORT=587
+      # - SMTP_USER=alert@yourcompany.ru
+      # - SMTP_PASSWORD=your_password
+    volumes:
+      - db_data:/data
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cert-checker-frontend
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
+    driver: local
