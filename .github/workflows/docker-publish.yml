@@ -1,0 +1,55 @@
+name: Build and Publish Docker Images
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY: ghcr.io
+  # Converts repository name to lowercase to comply with GHCR naming rules
+  IMAGE_BACKEND: ghcr.io/${{ github.repository }}-backend
+  IMAGE_FRONTEND: ghcr.io/${{ github.repository }}-frontend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set lower case owner name
+        run: |
+          echo "IMAGE_BACKEND_LOWER=$(echo ${{ env.IMAGE_BACKEND }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "IMAGE_FRONTEND_LOWER=$(echo ${{ env.IMAGE_FRONTEND }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Build and push Backend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.IMAGE_BACKEND_LOWER }}:latest
+            ${{ env.IMAGE_BACKEND_LOWER }}:${{ github.sha }}
+
+      - name: Build and push Frontend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.IMAGE_FRONTEND_LOWER }}:latest
+            ${{ env.IMAGE_FRONTEND_LOWER }}:${{ github.sha }}
