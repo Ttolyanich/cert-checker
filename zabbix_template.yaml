@@ -15,7 +15,7 @@ zabbix_export:
         # Глобальные макросы шаблона
       macros:
         - macro: '{$CERT_CHECKER_URL}'
-          value: 'http://192.168.102.246:8000'
+          value: 'http://localhost:8000'
           description: 'URL-адрес бэкенда Cert-Checker (без слэша на конце)'
         - macro: '{$ZABBIX_TOKEN}'
           value: 'zabbix_secret_token'

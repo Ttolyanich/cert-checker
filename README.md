@@ -85,8 +85,8 @@ docker-compose up -d --build
 2.  Создайте узел сети (Host) для сервера Cert-Checker.
 3.  Прилинкуйте к нему импортированный шаблон **Cert-Checker SSL Monitoring**.
 4.  Перейдите на вкладку **Macros (Макросы)** узла сети и заполните значения:
-    *   `{$CERT_CHECKER_URL}` — URL вашего бэкенда (например, `http://192.168.102.246:8000`).
-    *   `{$ZABBIX_TOKEN}` — токен из вашего `docker-compose.yml`.
+    *   `{$CERT_CHECKER_URL}` — адрес вашей панели (например, `http://<your-server-ip>:8000`).
+    *   `{$ZABBIX_TOKEN}` — токен, указанный в `docker-compose.yml` (`ZABBIX_TOKEN`).
 
 > [!NOTE]
 > Шаблон использует **Dependent Items** (зависимые элементы). Zabbix делает всего один HTTP-запрос раз в 10 минут, забирает полный пакет метрик по сайту, а затем мгновенно распределяет данные (дни, статус, ошибки) с помощью предобработки `JSONPath`. Это гарантирует нулевую нагрузку на ваш сервер Cert-Checker.
@@ -125,7 +125,7 @@ version: '3.8'
 
 services:
   backend:
-    image: ghcr.io/ttolyanich/cert-checker-backend:latest
+    image: ghcr.io/your-github-username/cert-checker-backend:latest
     container_name: cert-checker-backend
     restart: always
     environment:
@@ -138,7 +138,7 @@ services:
       - "8000:8000"
 
   frontend:
-    image: ghcr.io/ttolyanich/cert-checker-frontend:latest
+    image: ghcr.io/your-github-username/cert-checker-frontend:latest
     container_name: cert-checker-frontend
     restart: always
     ports:
