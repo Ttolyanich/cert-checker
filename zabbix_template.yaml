@@ -11,8 +11,6 @@ zabbix_export:
       description: 'Шаблон для автоматического обнаружения и мониторинга SSL-сертификатов через API Cert-Checker.'
       groups:
         - name: Templates/Applications
-      items:
-        # Глобальные макросы шаблона
       macros:
         - macro: '{$CERT_CHECKER_URL}'
           value: 'http://localhost:8000'
