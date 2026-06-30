@@ -1,0 +1,97 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+      name: Templates/Applications
+  templates:
+    - uuid: 17466ae738214b52bf9486f91995282d
+      template: 'Cert-Checker SSL Monitoring'
+      name: 'Cert-Checker SSL Monitoring'
+      groups:
+        - name: Templates/Applications
+      discovery_rules:
+        - uuid: d877f4e79bff43e8bb8c6ddbdced78ab
+          name: 'Cert-Checker Sites Discovery'
+          type: HTTP_AGENT
+          key: cert_checker.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: 761c2c78f95e4133b34307d95b5858d4
+              name: 'SSL days left: {#SITE_HOST}:{#SITE_PORT}'
+              type: DEPENDENT
+              key: 'cert_checker.days_left[{#SITE_HOST},{#SITE_PORT}]'
+              delay: '0'
+              units: days
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.days_left
+              master_item:
+                key: 'cert_checker.metrics_raw[{#SITE_HOST},{#SITE_PORT}]'
+            - uuid: d9083afb51d8486bb4cdf68eb5aa6526
+              name: 'SSL check error: {#SITE_HOST}:{#SITE_PORT}'
+              type: DEPENDENT
+              key: 'cert_checker.error[{#SITE_HOST},{#SITE_PORT}]'
+              delay: '0'
+              value_type: TEXT
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.error
+              master_item:
+                key: 'cert_checker.metrics_raw[{#SITE_HOST},{#SITE_PORT}]'
+            - uuid: 009422b6a4fc49f795c784f8ce5f24c0
+              name: 'Raw metrics for {#SITE_HOST}:{#SITE_PORT}'
+              type: HTTP_AGENT
+              key: 'cert_checker.metrics_raw[{#SITE_HOST},{#SITE_PORT}]'
+              delay: 1h
+              value_type: TEXT
+              trends: '0'
+              url: '{$CERT_CHECKER_URL}/api/v1/zabbix/metrics?token={$ZABBIX_TOKEN}&host={#SITE_HOST}&port={#SITE_PORT}'
+            - uuid: 06ac26537d114c45beafcdb4b68db631
+              name: 'SSL status: {#SITE_HOST}:{#SITE_PORT}'
+              type: DEPENDENT
+              key: 'cert_checker.status[{#SITE_HOST},{#SITE_PORT}]'
+              delay: '0'
+              value_type: TEXT
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.status
+              master_item:
+                key: 'cert_checker.metrics_raw[{#SITE_HOST},{#SITE_PORT}]'
+              trigger_prototypes:
+                - uuid: 9fc2672088f748178ca39ad8c9facb22
+                  expression: 'last(/Cert-Checker SSL Monitoring/cert_checker.status[{#SITE_HOST},{#SITE_PORT}])="expired" or last(/Cert-Checker SSL Monitoring/cert_checker.status[{#SITE_HOST},{#SITE_PORT}])="error"'
+                  name: 'SSL Certificate for {#SITE_HOST}:{#SITE_PORT} is EXPIRED or has connection error'
+                  priority: HIGH
+            - uuid: c22941c6a35a433190d61c865dd3de9f
+              name: 'SSL warning days limit: {#SITE_HOST}:{#SITE_PORT}'
+              type: DEPENDENT
+              key: 'cert_checker.warning_days[{#SITE_HOST},{#SITE_PORT}]'
+              delay: '0'
+              units: days
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.warning_days
+              master_item:
+                key: 'cert_checker.metrics_raw[{#SITE_HOST},{#SITE_PORT}]'
+          trigger_prototypes:
+            - uuid: ec199ea68f7442fbade1b9b88cc8f5d9
+              expression: 'last(/Cert-Checker SSL Monitoring/cert_checker.days_left[{#SITE_HOST},{#SITE_PORT}]) < last(/Cert-Checker SSL Monitoring/cert_checker.warning_days[{#SITE_HOST},{#SITE_PORT}]) and last(/Cert-Checker SSL Monitoring/cert_checker.days_left[{#SITE_HOST},{#SITE_PORT}]) > 0'
+              name: 'SSL Certificate for {#SITE_HOST}:{#SITE_PORT} expires in less than warning limit (only {ITEM.LASTVALUE1} days left)'
+              priority: AVERAGE
+          url: '{$CERT_CHECKER_URL}/api/v1/zabbix/discovery?token={$ZABBIX_TOKEN}'
+          query_fields:
+            - name: token
+              value: '{$ZABBIX_TOKEN}'
+            - name: token
+              value: '{$ZABBIX_TOKEN}'
+      macros:
+        - macro: '{$CERT_CHECKER_URL}'
+          value: 'http://{HOST.CONN}:8000'
+        - macro: '{$ZABBIX_TOKEN}'
+          value: zabbix_secret_token
