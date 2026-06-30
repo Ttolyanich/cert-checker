@@ -1,0 +1,139 @@
+zabbix_export:
+  version: '6.0'
+  date: '2026-06-30T18:00:00Z'
+  groups:
+    - uuid: a5756602c34444c9b3a0e5cb153c306d
+      name: Templates/Applications
+  templates:
+    - uuid: f9c56782a20b41cfbd3e93a0b5c15e88
+      template: 'Cert-Checker SSL Monitoring'
+      name: 'Cert-Checker SSL Monitoring'
+      description: 'Шаблон для автоматического обнаружения и мониторинга SSL-сертификатов через API Cert-Checker.'
+      groups:
+        - name: Templates/Applications
+      items:
+        # Глобальные макросы шаблона
+      macros:
+        - macro: '{$CERT_CHECKER_URL}'
+          value: 'http://192.168.102.246:8000'
+          description: 'URL-адрес бэкенда Cert-Checker (без слэша на конце)'
+        - macro: '{$ZABBIX_TOKEN}'
+          value: 'zabbix_secret_token'
+          description: 'Токен авторизации для Zabbix API'
+      discovery_rules:
+        - uuid: d1c5f602b3aa4969b8e23a0b45c22e92
+          name: 'Cert-Checker Sites Discovery'
+          type: HTTP_AGENT
+          key: cert_checker.discovery
+          delay: 1h
+          url: '{$CERT_CHECKER_URL}/api/v1/zabbix/discovery'
+          query_fields:
+            - name: token
+              value: '{$ZABBIX_TOKEN}'
+          item_prototypes:
+            # 1. Основной элемент данных (сырой JSON)
+            - uuid: e2c5f602b3bb4969b8e23a0b45c22e93
+              name: 'Raw metrics for {#SITE_HOST}:{#SITE_PORT}'
+              type: HTTP_AGENT
+              key: 'cert_checker.metrics_raw[{#SITE_HOST},{#SITE_PORT}]'
+              delay: 10m
+              history: '0'
+              trends: '0'
+              value_type: TEXT
+              url: '{$CERT_CHECKER_URL}/api/v1/zabbix/metrics'
+              query_fields:
+                - name: token
+                  value: '{$ZABBIX_TOKEN}'
+                - name: host
+                  value: '{#SITE_HOST}'
+                - name: port
+                  value: '{#SITE_PORT}'
+              description: 'Получает полный JSON-пакет метрик для сайта.'
+            
+            # 2. Зависимый элемент: Количество дней
+            - uuid: e3c5f602b3cc4969b8e23a0b45c22e94
+              name: 'SSL days left: {#SITE_HOST}:{#SITE_PORT}'
+              type: DEPENDENT
+              key: 'cert_checker.days_left[{#SITE_HOST},{#SITE_PORT}]'
+              delay: '0'
+              history: 30d
+              trends: 90d
+              value_type: FLOAT
+              units: days
+              master_item:
+                key: 'cert_checker.metrics_raw[{#SITE_HOST},{#SITE_PORT}]'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.days_left
+              description: 'Количество дней до истечения сертификата.'
+
+            # 3. Зависимый элемент: Статус
+            - uuid: e4c5f602b3dd4969b8e23a0b45c22e95
+              name: 'SSL status: {#SITE_HOST}:{#SITE_PORT}'
+              type: DEPENDENT
+              key: 'cert_checker.status[{#SITE_HOST},{#SITE_PORT}]'
+              delay: '0'
+              history: 7d
+              trends: '0'
+              value_type: CHAR
+              master_item:
+                key: 'cert_checker.metrics_raw[{#SITE_HOST},{#SITE_PORT}]'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.status
+              description: 'Статус (valid, warning, expired, error).'
+
+            # 4. Зависимый элемент: Лимит предупреждения
+            - uuid: e5c5f602b3ee4969b8e23a0b45c22e96
+              name: 'SSL warning days limit: {#SITE_HOST}:{#SITE_PORT}'
+              type: DEPENDENT
+              key: 'cert_checker.warning_days[{#SITE_HOST},{#SITE_PORT}]'
+              delay: '0'
+              history: 7d
+              trends: '0'
+              value_type: FLOAT
+              units: days
+              master_item:
+                key: 'cert_checker.metrics_raw[{#SITE_HOST},{#SITE_PORT}]'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.warning_days
+              description: 'Настроенный порог предупреждения в днях.'
+
+            # 5. Зависимый элемент: Текст ошибки
+            - uuid: e6c5f602b3ff4969b8e23a0b45c22e97
+              name: 'SSL check error: {#SITE_HOST}:{#SITE_PORT}'
+              type: DEPENDENT
+              key: 'cert_checker.error[{#SITE_HOST},{#SITE_PORT}]'
+              delay: '0'
+              history: 7d
+              trends: '0'
+              value_type: CHAR
+              master_item:
+                key: 'cert_checker.metrics_raw[{#SITE_HOST},{#SITE_PORT}]'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.error
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1h
+              description: 'Текст ошибки подключения или проверки.'
+          
+          trigger_prototypes:
+            # Триггер 1: Срок действия истек или ошибка проверки
+            - uuid: t1c5f602b3aa4969b8e23a0b45c22e98
+              expression: 'last(/Cert-Checker SSL Monitoring/cert_checker.status[{#SITE_HOST},{#SITE_PORT}])="expired" or last(/Cert-Checker SSL Monitoring/cert_checker.status[{#SITE_HOST},{#SITE_PORT}])="error"'
+              name: 'SSL Certificate for {#SITE_HOST}:{#SITE_PORT} is EXPIRED or has connection error'
+              priority: HIGH
+              description: 'Срок действия сертификата истек, либо бэкенд не может подключиться к сайту для проверки.'
+            
+            # Триггер 2: Сертификат скоро истекает (сравнение с порогом предупреждения)
+            - uuid: t2c5f602b3bb4969b8e23a0b45c22e99
+              expression: 'last(/Cert-Checker SSL Monitoring/cert_checker.days_left[{#SITE_HOST},{#SITE_PORT}]) < last(/Cert-Checker SSL Monitoring/cert_checker.warning_days[{#SITE_HOST},{#SITE_PORT}]) and last(/Cert-Checker SSL Monitoring/cert_checker.days_left[{#SITE_HOST},{#SITE_PORT}]) > 0'
+              name: 'SSL Certificate for {#SITE_HOST}:{#SITE_PORT} expires in less than warning limit (only {ITEM.LASTVALUE1} days left)'
+              priority: WARNING
+              description: 'Количество оставшихся дней жизни сертификата меньше установленного порога предупреждения.'
