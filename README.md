@@ -76,6 +76,82 @@ docker-compose up -d --build
 
 ---
 
+## 🛠️ Развертывание без Docker (напрямую на хосте)
+
+Если вы предпочитаете не использовать Docker, проект можно легко запустить непосредственно в операционной системе. Для этого вам понадобятся **Python 3.12** и **Node.js** (только для сборки фронтенда).
+
+### 1. Запуск Бэкенда (FastAPI)
+
+1. Перейдите в папку бэкенда:
+   ```bash
+   cd backend
+   ```
+2. Создайте и активируйте виртуальное окружение Python:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+3. Установите зависимости:
+   ```bash
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
+4. Запустите сервер `uvicorn`:
+   ```bash
+   uvicorn app.main:app --host 127.0.0.1 --port 8000
+   ```
+   *(В продакшене рекомендуется настроить запуск uvicorn как системную службу `systemd`).*
+
+### 2. Сборка и настройка Фронтенда (Nginx)
+
+1. Перейдите в папку фронтенда, установите зависимости и соберите статические файлы:
+   ```bash
+   cd ../frontend
+   npm install
+   npm run build
+   ```
+   После этого в папке `frontend` появится готовая сборка в директории `dist`.
+
+2. Настройте веб-сервер **Nginx** для раздачи статики фронтенда и проксирования API-запросов к бэкенду. Создайте конфигурационный файл (например, `/etc/nginx/sites-available/cert-checker`):
+
+   ```nginx
+   server {
+       listen 8080;
+       server_name _;
+
+       root /opt/cert-checker/frontend/dist;
+       index index.html;
+
+       location / {
+           try_files $uri $uri/ /index.html;
+       }
+
+       location /api {
+           proxy_pass http://127.0.0.1:8000;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+       }
+
+       location /docs {
+           proxy_pass http://127.0.0.1:8000/docs;
+       }
+       location /openapi.json {
+           proxy_pass http://127.0.0.1:8000/openapi.json;
+       }
+   }
+   ```
+
+3. Активируйте конфигурацию и перезапустите Nginx:
+   ```bash
+   ln -s /etc/nginx/sites-available/cert-checker /etc/nginx/sites-enabled/
+   nginx -t
+   systemctl restart nginx
+   ```
+
+---
+
 ## 🤖 Интеграция с Zabbix (LLD)
 
 В корне репозитория находится готовый файл шаблона **`zabbix_template.yaml`**.
