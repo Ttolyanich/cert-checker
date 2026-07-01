@@ -53,35 +53,33 @@ graph TD
 
 ## 🚀 Быстрый старт (Docker Compose)
 
+Для запуска приложения вам понадобится только установленный **Docker** и **Docker Compose**. Проект разворачивается из готовых Docker-образов, которые автоматически скачиваются из GitHub Container Registry.
+
 ### 1. Клонирование репозитория
-Сначала склонируйте репозиторий и перейдите в папку проекта:
+Склонируйте репозиторий в папку `/opt/cert-checker` и перейдите в неё:
 ```bash
-git clone https://github.com/Ttolyanich/cert-checker.git
-cd cert-checker
+git clone https://github.com/Ttolyanich/cert-checker.git /opt/cert-checker
+cd /opt/cert-checker
 ```
 
-### 2. Подготовка конфигурации
-В корне проекта находится файл `docker-compose.yml`. Вы можете настроить переменные окружения:
+### 2. Подготовка конфигурации (Опционально)
+В файле `docker-compose.yml` вы можете настроить переменные окружения (например, указать свой `SECRET_KEY` или токен Zabbix):
+*   `SECRET_KEY` — ключ для шифрования сессий (рекомендуется сгенерировать свой: `python3 -c "import secrets; print(secrets.token_hex(32))"`).
+*   `ZABBIX_TOKEN` — секретный токен для доступа к API Zabbix LLD.
 
-| Переменная | Описание | Значение по умолчанию |
-| :--- | :--- | :--- |
-| `DATABASE_URL` | Путь к базе данных SQLite | `sqlite:////data/cert_checker.db` |
-| `SECRET_KEY` | Ключ для шифрования сессий и JWT | `change_me_in_production` |
-| `ZABBIX_TOKEN` | Секретный токен для интеграции с Zabbix | `zabbix_secret_token` |
-
-### 2. Запуск
-Соберите и запустите контейнеры одной командой:
+### 3. Запуск проекта
+Запустите проект одной командой (Docker автоматически скачает готовые образы):
 ```bash
-docker-compose up -d --build
+docker-compose up -d
 ```
 
-Панель будет доступна по адресу: **`http://<IP_вашего_сервера>:8080`**
+Панель управления будет доступна по адресу: **`http://<IP_вашего_сервера>:8080`**
 
-### 3. Первый вход (Дефолтные учетные данные)
+### 4. Первый вход (Дефолтные учетные данные)
 *   **Логин**: `admin`
 *   **Пароль**: `admin123`
 
-*(Вы можете изменить пароль или создать новых администраторов в панели управления на вкладке «Администраторы»).*
+*(Сменить пароль или создать новых администраторов можно во вкладке «Администраторы» в панели управления).*
 
 ---
 
@@ -209,46 +207,10 @@ cd cert-checker
 В проекте настроен автоматический пайплайн **GitHub Actions** (`.github/workflows/docker-publish.yml`). 
 
 При отправке кода в ветку `main` или создании релиз-тегов (например, `v1.0.0`), GitHub автоматически:
-1.  Сберет оптимизированные Docker-образы для фронтенда и бэкенда.
+1.  Сберет новые оптимизированные Docker-образы для фронтенда и бэкенда.
 2.  Опубликует их в **GitHub Container Registry** (`ghcr.io`).
 
-Вы можете развернуть проект на сервере из готовых образов, не копируя исходный код. Для этого достаточно создать на сервере файл `docker-compose.yml` со следующим содержимым:
-
-```yaml
-version: '3.8'
-
-services:
-  backend:
-    image: ghcr.io/ttolyanich/cert-checker-backend:latest
-    container_name: cert-checker-backend
-    restart: always
-    environment:
-      - DATABASE_URL=sqlite:////data/cert_checker.db
-      - SECRET_KEY=your_super_secret_key
-      - ZABBIX_TOKEN=zabbix_secret_token
-    volumes:
-      - db_data:/data
-    ports:
-      - "8000:8000"
-
-  frontend:
-    image: ghcr.io/ttolyanich/cert-checker-frontend:latest
-    container_name: cert-checker-frontend
-    restart: always
-    ports:
-      - "8080:80"
-    depends_on:
-      - backend
-
-volumes:
-  db_data:
-    driver: local
-```
-
-И запустить одной командой:
-```bash
-docker-compose up -d
-```
+Благодаря этому для развертывания проекта на любом сервере достаточно использовать готовый файл `docker-compose.yml`, описанный в разделе **Быстрый старт**, без необходимости скачивать исходный код и компилировать его вручную.
 
 ---
 

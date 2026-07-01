@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ghcr.io/ttolyanich/cert-checker-backend:latest
     container_name: cert-checker-backend
     restart: always
     environment:
@@ -21,9 +19,7 @@ services:
       - "8000:8000"
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ghcr.io/ttolyanich/cert-checker-frontend:latest
     container_name: cert-checker-frontend
     restart: always
     ports:
