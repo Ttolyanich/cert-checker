@@ -63,8 +63,6 @@ def check_all_sites_job():
                 site.last_error = result["last_error"]
                 site.last_checked = result["last_checked"]
                 
-                db.commit()
-                
                 # Determine alert triggers
                 should_alert = False
                 alert_level = None
@@ -84,12 +82,10 @@ def check_all_sites_job():
                         site.status = "critical"
                         should_alert = True
                         alert_level = "critical"
-                        db.commit()
                     elif days_remaining <= site.warning_days:
                         site.status = "warning"
                         should_alert = True
                         alert_level = "warning"
-                        db.commit()
                 
                 if should_alert:
                     # Retrieve global notification configs
@@ -107,6 +103,11 @@ def check_all_sites_job():
                         
             except Exception as e:
                 logger.error(f"Error checking site {site.hostname}: {e}")
+                
+        try:
+            db.commit()
+        except Exception as commit_err:
+            logger.error(f"Error committing updates: {commit_err}")
                 
         logger.info("Background SSL check completed.")
     except Exception as e:

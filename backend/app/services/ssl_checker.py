@@ -64,11 +64,8 @@ def check_ssl(hostname: str, port: int = 443) -> dict:
             
         # Extract Common Name of the Issuer
         issuer = cert.issuer
-        issuer_cn = "Unknown"
-        for attribute in issuer:
-            if attribute.oid._name == "commonName":
-                issuer_cn = attribute.value
-                break
+        cn_attrs = issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+        issuer_cn = cn_attrs[0].value if cn_attrs else "Unknown"
                 
         now = datetime.now(timezone.utc)
         
