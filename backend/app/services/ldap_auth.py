@@ -4,6 +4,30 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+def _clean_ldap_host(server_str: str) -> Tuple[str, Optional[int], bool]:
+    """
+    Cleans LDAP server URI into (host, port, use_ssl).
+    Handles ldap://, ldaps://, quotes, ports, and trailing slashes.
+    """
+    if not server_str:
+        return "", None, False
+    cleaned = server_str.strip().strip('"').strip("'")
+    use_ssl = False
+    if cleaned.lower().startswith("ldaps://"):
+        use_ssl = True
+        cleaned = cleaned[8:]
+    elif cleaned.lower().startswith("ldap://"):
+        use_ssl = False
+        cleaned = cleaned[7:]
+    cleaned = cleaned.rstrip("/").strip()
+    port = None
+    if ":" in cleaned:
+        host_part, port_part = cleaned.rsplit(":", 1)
+        if port_part.isdigit():
+            cleaned = host_part
+            port = int(port_part)
+    return cleaned, port, use_ssl
+
 def authenticate_ldap(username: str, password: str) -> Tuple[bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
     """
     Authenticates a user against Active Directory / LDAP.
@@ -27,7 +51,7 @@ def authenticate_ldap(username: str, password: str) -> Tuple[bool, Optional[str]
         logger.error("Библиотека ldap3 не установлена в контейнере.")
         return False, None, None, None, "Библиотека ldap3 не установлена на сервере."
 
-    server_uri = (settings.LDAP_SERVER or "").strip()
+    server_raw = (settings.LDAP_SERVER or "").strip()
     base_dn = (settings.LDAP_BASE_DN or "").strip()
     ldap_domain = (settings.LDAP_DOMAIN or "").strip().lower()
     bind_user = (settings.LDAP_BIND_USER or "").strip()
@@ -35,8 +59,11 @@ def authenticate_ldap(username: str, password: str) -> Tuple[bool, Optional[str]
     req_group = (settings.LDAP_REQUIRED_GROUP or "").strip()
     admin_group = (settings.LDAP_ADMIN_GROUP or "").strip()
 
-    if not server_uri or not base_dn:
-        logger.warning(f"[LDAP] Конфигурация неполная: LDAP_SERVER='{server_uri}', LDAP_BASE_DN='{base_dn}'")
+    host, parsed_port, use_ssl = _clean_ldap_host(server_raw)
+    port = parsed_port or (636 if use_ssl else 389)
+
+    if not host or not base_dn:
+        logger.warning(f"[LDAP] Конфигурация неполная: LDAP_SERVER='{server_raw}', LDAP_BASE_DN='{base_dn}'")
         return False, None, None, None, "Настройки LDAP не заполнены (отсутствует LDAP_SERVER или LDAP_BASE_DN)."
 
     clean_id = username.strip()
@@ -49,20 +76,57 @@ def authenticate_ldap(username: str, password: str) -> Tuple[bool, Optional[str]
     domain_short = ldap_domain.split(".")[0].upper() if ldap_domain else ""
 
     try:
-        use_ssl = server_uri.lower().startswith("ldaps://")
-        server = Server(server_uri, use_ssl=use_ssl, get_info=ALL, connect_timeout=8)
+        server = Server(host, port=port, use_ssl=use_ssl, get_info=ALL, connect_timeout=8)
 
         user_dn = None
         user_entry = None
         user_bound = False
+        successful_bind_user = None
 
-        # Шаг 1: Если настроена сервисная учетная запись (Bind DN), ищем пользователя через нее
+        # Шаг 1: Если настроена сервисная учетная запись, ищем пользователя через нее (Search-then-Bind)
         if bind_user and bind_password:
-            try:
-                service_conn = Connection(server, user=bind_user, password=bind_password, auto_bind=True)
-            except Exception as e:
-                logger.error(f"[LDAP] Ошибка подключения сервисной учетной записи {bind_user}: {e}")
-                return False, None, None, None, f"Ошибка привязки сервисной учетной записи LDAP: {e}"
+            bind_candidates = [bind_user]
+
+            # Если указан короткий логин (как в srv-managment: LDAP_BIND_USER=pve)
+            if domain_short and "\\" not in bind_user and "@" not in bind_user:
+                bind_candidates.append(f"{domain_short}\\{bind_user}")
+            if ldap_domain and "@" not in bind_user and "\\" not in bind_user:
+                bind_candidates.append(f"{bind_user}@{ldap_domain}")
+
+            # Если указан DN (например CN=pve,DC=itsupport,DC=local)
+            if bind_user.upper().startswith("CN="):
+                first_part = bind_user.split(",")[0]
+                if "=" in first_part:
+                    raw_user = first_part.split("=")[1].strip()
+                    if raw_user:
+                        if ldap_domain:
+                            bind_candidates.append(f"{raw_user}@{ldap_domain}")
+                        if domain_short:
+                            bind_candidates.append(f"{domain_short}\\{raw_user}")
+                        bind_candidates.append(raw_user)
+                if "CN=USERS" not in bind_user.upper() and ",DC=" in bind_user.upper():
+                    parts = bind_user.split(",", 1)
+                    bind_candidates.append(f"{parts[0]},CN=Users,{parts[1]}")
+
+            service_conn = None
+            last_bind_err = None
+
+            for b_cand in dict.fromkeys([c for c in bind_candidates if c]):
+                try:
+                    tc = Connection(server, user=b_cand, password=bind_password, auto_bind=True)
+                    if tc.bound:
+                        service_conn = tc
+                        successful_bind_user = b_cand
+                        logger.info(f"[LDAP] Сервисная учетная запись успешно авторизована как '{b_cand}'")
+                        break
+                except Exception as e:
+                    last_bind_err = e
+                    logger.debug(f"[LDAP] Вариант привязки сервисной УЗ '{b_cand}' не удался: {e}")
+                    continue
+
+            if not service_conn or not service_conn.bound:
+                logger.error(f"[LDAP] Ошибка подключения сервисной учетной записи '{bind_user}' (проверены: {bind_candidates}): {last_bind_err}")
+                return False, None, None, None, f"Ошибка привязки сервисной учетной записи LDAP '{bind_user}': {last_bind_err}"
 
             safe_id = escape_filter_chars(clean_id)
             safe_user = escape_filter_chars(clean_user)
@@ -84,7 +148,7 @@ def authenticate_ldap(username: str, password: str) -> Tuple[bool, Optional[str]
             if not service_conn.entries:
                 service_conn.unbind()
                 logger.warning(f"[LDAP] Пользователь '{clean_id}' не найден в Active Directory по фильтру {search_filter}")
-                return False, None, None, None, "Пользователь не найден в каталоге Active Directory."
+                return False, None, None, None, f"Пользователь «{clean_id}» не найден в Active Directory"
 
             user_entry = service_conn.entries[0]
             user_dn = str(user_entry.entry_dn if hasattr(user_entry, 'entry_dn') else user_entry.distinguishedName)
@@ -213,7 +277,8 @@ def authenticate_ldap(username: str, password: str) -> Tuple[bool, Optional[str]
             # Рекурсивный поиск во вложенных группах AD через LDAP_MATCHING_RULE_IN_CHAIN
             if settings.LDAP_NESTED_GROUPS and user_dn and bind_user and bind_password:
                 try:
-                    s_conn = Connection(server, user=bind_user, password=bind_password, auto_bind=True)
+                    bind_as = successful_bind_user or bind_user
+                    s_conn = Connection(server, user=bind_as, password=bind_password, auto_bind=True)
                     safe_grp = escape_filter_chars(target_group)
                     grp_filter = f"(&(objectCategory=group)(|(cn={safe_grp})(distinguishedName={safe_grp})))"
                     s_conn.search(search_base=base_dn, search_filter=grp_filter, search_scope=SUBTREE, attributes=['distinguishedName'])
@@ -262,5 +327,5 @@ def authenticate_ldap(username: str, password: str) -> Tuple[bool, Optional[str]
         return True, resolved_username, role, display_name, None
 
     except Exception as e:
-        logger.exception(f"[LDAP ERROR] Ошибка подключения к контроллеру домена {server_uri}: {e}")
+        logger.exception(f"[LDAP ERROR] Ошибка подключения к контроллеру домена {server_raw}: {e}")
         return False, None, None, None, f"Ошибка подключения к контроллеру домена Active Directory: {str(e)}"
