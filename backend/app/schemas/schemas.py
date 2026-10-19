@@ -15,15 +15,24 @@ class TokenPayload(BaseModel):
 class UserBase(BaseModel):
     username: str
     full_name: Optional[str] = None
+    role: str = "admin"
+    auth_source: str = "local"
     is_active: bool = True
 
-class UserCreate(UserBase):
-    password: str
+class UserCreate(BaseModel):
+    username: str
+    password: Optional[str] = None
+    full_name: Optional[str] = None
+    role: str = "admin"
+    auth_source: str = "local"
+    is_active: bool = True
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
     full_name: Optional[str] = None
     password: Optional[str] = None
+    role: Optional[str] = None
+    auth_source: Optional[str] = None
     is_active: Optional[bool] = None
 
 class UserOut(UserBase):
@@ -59,6 +68,8 @@ class SiteOut(SiteBase):
     ssl_issuer: Optional[str] = None
     last_error: Optional[str] = None
     last_checked: Optional[datetime] = None
+    last_alert_at: Optional[datetime] = None
+    last_alert_level: Optional[str] = None
     created_at: datetime
 
     class Config:

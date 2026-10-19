@@ -8,14 +8,13 @@ from app.models import models
 
 router = APIRouter()
 
-# Get token from environment or use a default one
-ZABBIX_TOKEN = os.getenv("ZABBIX_TOKEN", "zabbix_secret_token")
+from app.core.config import settings
 
 def verify_zabbix_token(token: str = Query(...)):
     """
     Dependency to verify the Zabbix API token.
     """
-    if token != ZABBIX_TOKEN:
+    if token != settings.ZABBIX_TOKEN:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Zabbix token"

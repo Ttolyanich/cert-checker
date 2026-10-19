@@ -16,11 +16,13 @@ def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[models.User]
     return db.query(models.User).offset(skip).limit(limit).all()
 
 def create_user(db: Session, user: schemas.UserCreate) -> models.User:
-    hashed_password = get_password_hash(user.password)
+    hashed_password = get_password_hash(user.password) if user.password else None
     db_user = models.User(
         username=user.username,
         hashed_password=hashed_password,
         full_name=user.full_name,
+        role=user.role or "admin",
+        auth_source=user.auth_source or "local",
         is_active=user.is_active
     )
     db.add(db_user)
@@ -36,6 +38,8 @@ def update_user(db: Session, user_id: str, user_update: schemas.UserUpdate) -> O
     update_data = user_update.model_dump(exclude_unset=True)
     if "password" in update_data and update_data["password"]:
         update_data["hashed_password"] = get_password_hash(update_data["password"])
+        del update_data["password"]
+    elif "password" in update_data and not update_data["password"]:
         del update_data["password"]
         
     for key, value in update_data.items():
@@ -62,12 +66,15 @@ def get_sites(db: Session) -> List[models.Site]:
     return db.query(models.Site).order_by(models.Site.order_index.asc()).all()
 
 def create_site(db: Session, site: schemas.SiteCreate) -> models.Site:
+    from app.services.ssl_checker import clean_hostname_and_port
+    clean_host, clean_port = clean_hostname_and_port(site.hostname, site.port)
+    
     max_order = db.query(func.max(models.Site.order_index)).scalar()
     next_order = (max_order or 0) + 1
     
     db_site = models.Site(
-        hostname=site.hostname,
-        port=site.port,
+        hostname=clean_host,
+        port=clean_port,
         warning_days=site.warning_days,
         critical_days=site.critical_days,
         order_index=next_order
@@ -78,11 +85,23 @@ def create_site(db: Session, site: schemas.SiteCreate) -> models.Site:
     return db_site
 
 def update_site(db: Session, site_id: str, site_update: schemas.SiteUpdate) -> Optional[models.Site]:
+    from app.services.ssl_checker import clean_hostname_and_port
     db_site = get_site(db, site_id)
     if not db_site:
         return None
-    for key, value in site_update.model_dump(exclude_unset=True).items():
+    update_data = site_update.model_dump(exclude_unset=True)
+    if "hostname" in update_data or "port" in update_data:
+        h = update_data.get("hostname", db_site.hostname)
+        p = update_data.get("port", db_site.port)
+        clean_h, clean_p = clean_hostname_and_port(h, p)
+        update_data["hostname"] = clean_h
+        update_data["port"] = clean_p
+
+    for key, value in update_data.items():
         setattr(db_site, key, value)
+    db.commit()
+    db.refresh(db_site)
+    return db_site
     db.commit()
     db.refresh(db_site)
     return db_site

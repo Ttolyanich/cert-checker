@@ -10,6 +10,7 @@ on:
 env:
   REGISTRY: ghcr.io
   # Converts repository name to lowercase to comply with GHCR naming rules
+  IMAGE_MAIN: ghcr.io/${{ github.repository }}
   IMAGE_BACKEND: ghcr.io/${{ github.repository }}-backend
   IMAGE_FRONTEND: ghcr.io/${{ github.repository }}-frontend
 
@@ -33,9 +34,22 @@ jobs:
 
       - name: Set lower case owner name
         run: |
+          echo "IMAGE_MAIN_LOWER=$(echo ${{ env.IMAGE_MAIN }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
           echo "IMAGE_BACKEND_LOWER=$(echo ${{ env.IMAGE_BACKEND }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
           echo "IMAGE_FRONTEND_LOWER=$(echo ${{ env.IMAGE_FRONTEND }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
+      # 1. Build and push Unified All-in-One Single Container Docker image
+      - name: Build and push All-in-One Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_MAIN_LOWER }}:latest
+            ${{ env.IMAGE_MAIN_LOWER }}:${{ github.sha }}
+
+      # 2. Build and push Backend Docker image (for backwards compatibility)
       - name: Build and push Backend Docker image
         uses: docker/build-push-action@v5
         with:
@@ -45,6 +59,7 @@ jobs:
             ${{ env.IMAGE_BACKEND_LOWER }}:latest
             ${{ env.IMAGE_BACKEND_LOWER }}:${{ github.sha }}
 
+      # 3. Build and push Frontend Docker image (for backwards compatibility)
       - name: Build and push Frontend Docker image
         uses: docker/build-push-action@v5
         with:

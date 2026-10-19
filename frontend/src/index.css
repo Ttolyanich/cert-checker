@@ -31,134 +31,236 @@
   --color-unchecked-bg: rgba(107, 114, 128, 0.08);
 }
 
-/* --- Theme 1: Deep Space (Navy + Cyan) --- */
-[data-theme="navy"], :root:not([data-theme]) {
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #0d1526;
-  --bg-surface: rgba(13, 21, 38, 0.8);
-  --bg-input: #111c33;
-  
-  --border-color: rgba(0, 212, 255, 0.08);
-  --border-focus: rgba(0, 212, 255, 0.5);
-  
-  --text-primary: #e8f4f8;
-  --text-secondary: #7ea8b8;
-  --text-muted: #4a7080;
-  
-  --accent-color: #00d4ff;
-  --accent-hover: #33ddff;
-  --accent-gradient: linear-gradient(135deg, #33ddff 0%, #00d4ff 100%);
-  --accent-glow: rgba(0, 212, 255, 0.15);
-  
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
+/* ==============================================================================
+   ПАЛИТРЫ ОФОРМЛЕНИЯ (6 вариантов: classic, cyber_lime, electric_blue, crimson, rust_orange, graphite_pink)
+   ============================================================================== */
+
+/* 1. Classic Zinc (по умолчанию) */
+:root, [data-palette="classic"] {
+  --bg-primary: #141416;
+  --bg-secondary: #1c1c1f;
+  --bg-surface: #26262b;
+  --bg-input: #1a1a1d;
+  --border-color: #2f2f35;
+  --border-focus: #484852;
+  --text-primary: #f4f4f6;
+  --text-secondary: #9e9ea7;
+  --text-muted: #6b6b75;
+  --accent-color: #e4e4e7;
+  --accent-hover: #ffffff;
+  --accent-gradient: linear-gradient(135deg, #ffffff 0%, #e4e4e7 100%);
+  --accent-glow: rgba(255, 255, 255, 0.08);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.5);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.6);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,0.7);
   --glass-blur: blur(12px);
-  --header-bg: rgba(10, 14, 26, 0.85);
+  --header-bg: rgba(20, 20, 22, 0.9);
 }
 
-/* --- Theme 2: Industrial (Dark + Amber) --- */
-[data-theme="amber"] {
-  --bg-primary: #111008;
-  --bg-secondary: #1a1608;
-  --bg-surface: rgba(26, 22, 8, 0.8);
-  --bg-input: #211e0a;
-  
-  --border-color: rgba(245, 158, 11, 0.08);
-  --border-focus: rgba(245, 158, 11, 0.5);
-  
-  --text-primary: #fef3c7;
-  --text-secondary: #b89a50;
-  --text-muted: #6b5a30;
-  
-  --accent-color: #f59e0b;
-  --accent-hover: #fbbf24;
-  --accent-gradient: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  --accent-glow: rgba(245, 158, 11, 0.15);
-  
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
-  --glass-blur: blur(12px);
-  --header-bg: rgba(17, 16, 8, 0.85);
-}
-
-/* --- Theme 3: CyberSec (Purple + Neon) --- */
-[data-theme="cyber"] {
-  --bg-primary: #0d0817;
-  --bg-secondary: #15102a;
-  --bg-surface: rgba(21, 16, 42, 0.8);
-  --bg-input: #1c1535;
-  
-  --border-color: rgba(139, 92, 246, 0.1);
-  --border-focus: rgba(139, 92, 246, 0.5);
-  
-  --text-primary: #ede9fe;
-  --text-secondary: #9d8ac4;
-  --text-muted: #5b4f80;
-  
-  --accent-color: #8b5cf6;
-  --accent-hover: #a78bfa;
-  --accent-gradient: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #ec4899 100%);
-  --accent-glow: rgba(139, 92, 246, 0.2);
-  
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
-  --glass-blur: blur(12px);
-  --header-bg: rgba(13, 8, 23, 0.85);
-}
-
-/* --- Theme 4: Terminal (Dark + Green) --- */
-[data-theme="terminal"] {
-  --bg-primary: #0f1117;
-  --bg-secondary: #141a14;
-  --bg-surface: rgba(20, 26, 20, 0.8);
-  --bg-input: #1a221a;
-  
-  --border-color: rgba(34, 197, 94, 0.08);
-  --border-focus: rgba(34, 197, 94, 0.5);
-  
-  --text-primary: #dcfce7;
-  --text-secondary: #6aaa7a;
-  --text-muted: #3d6b48;
-  
-  --accent-color: #22c55e;
-  --accent-hover: #4ade80;
-  --accent-gradient: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
-  --accent-glow: rgba(34, 197, 94, 0.15);
-  
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
-  --glass-blur: blur(12px);
-  --header-bg: rgba(15, 17, 23, 0.85);
-}
-
-/* --- Theme 5: Light (Soft Blue) --- */
-[data-theme="light"] {
-  --bg-primary: #f8fafc;
+.light-theme,
+[data-theme="light"],
+[data-palette="classic"].light-theme,
+.light-theme[data-palette="classic"] {
+  --bg-primary: #f6f7f9;
   --bg-secondary: #ffffff;
-  --bg-surface: rgba(255, 255, 255, 0.9);
-  --bg-input: #f1f5f9;
-  
-  --border-color: #e2e8f0;
-  --border-focus: rgba(59, 130, 246, 0.5);
-  
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  
-  --accent-color: #3b82f6;
-  --accent-hover: #2563eb;
-  --accent-gradient: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-  --accent-glow: rgba(59, 130, 246, 0.12);
-  
+  --bg-surface: #eff1f4;
+  --bg-input: #ffffff;
+  --border-color: #e2e4e8;
+  --border-focus: #c4c7cf;
+  --text-primary: #18181b;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --accent-color: #18181b;
+  --accent-hover: #09090b;
+  --accent-gradient: linear-gradient(135deg, #27272a 0%, #18181b 100%);
+  --accent-glow: rgba(0, 0, 0, 0.06);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
   --shadow-lg: 0 10px 25px rgba(15, 23, 42, 0.08);
-  --glass-blur: blur(12px);
-  --header-bg: rgba(255, 255, 255, 0.85);
+  --header-bg: rgba(246, 247, 249, 0.92);
+}
+
+/* 2. Кислотно-зеленый (Cyber Lime) */
+[data-palette="cyber_lime"] {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #141414;
+  --bg-surface: #1e1e1e;
+  --bg-input: #171717;
+  --border-color: #2a2a2a;
+  --border-focus: #b6ff00;
+  --text-primary: #f5f5f5;
+  --text-secondary: #8e8e93;
+  --text-muted: #5e5e62;
+  --accent-color: #b6ff00;
+  --accent-hover: #c9ff33;
+  --accent-gradient: linear-gradient(135deg, #c9ff33 0%, #b6ff00 100%);
+  --accent-glow: rgba(182, 255, 0, 0.2);
+  --header-bg: rgba(10, 10, 10, 0.9);
+}
+
+[data-palette="cyber_lime"].light-theme,
+.light-theme[data-palette="cyber_lime"] {
+  --bg-primary: #f6f8f2;
+  --bg-secondary: #ffffff;
+  --bg-surface: #edf2e4;
+  --bg-input: #ffffff;
+  --border-color: #dce4cf;
+  --border-focus: #5e8a00;
+  --text-primary: #141a0d;
+  --text-secondary: #5e6b52;
+  --text-muted: #88977a;
+  --accent-color: #5e8a00;
+  --accent-hover: #486b00;
+  --accent-gradient: linear-gradient(135deg, #70a402 0%, #5e8a00 100%);
+  --accent-glow: rgba(94, 138, 0, 0.15);
+  --header-bg: rgba(246, 248, 242, 0.92);
+}
+
+/* 3. Электрический синий (Electric Blue) */
+[data-palette="electric_blue"],
+[data-theme="navy"] {
+  --bg-primary: #0c122e;
+  --bg-secondary: #131c42;
+  --bg-surface: #1a275c;
+  --bg-input: #10183b;
+  --border-color: #243575;
+  --border-focus: #245bff;
+  --text-primary: #f0f4ff;
+  --text-secondary: #94a3cc;
+  --text-muted: #5e6d9b;
+  --accent-color: #245bff;
+  --accent-hover: #4a77ff;
+  --accent-gradient: linear-gradient(135deg, #4a77ff 0%, #245bff 100%);
+  --accent-glow: rgba(36, 91, 255, 0.25);
+  --header-bg: rgba(12, 18, 46, 0.9);
+}
+
+[data-palette="electric_blue"].light-theme,
+.light-theme[data-palette="electric_blue"] {
+  --bg-primary: #f2f5fd;
+  --bg-secondary: #ffffff;
+  --bg-surface: #e5ecfb;
+  --bg-input: #ffffff;
+  --border-color: #ccd7f5;
+  --border-focus: #1e4bd6;
+  --text-primary: #0c122e;
+  --text-muted: #7586ad;
+  --text-secondary: #576b96;
+  --accent-color: #1e4bd6;
+  --accent-hover: #163cb0;
+  --accent-gradient: linear-gradient(135deg, #325fe7 0%, #1e4bd6 100%);
+  --accent-glow: rgba(30, 75, 214, 0.15);
+  --header-bg: rgba(242, 245, 253, 0.92);
+}
+
+/* 4. Кроваво-красный (Crimson) */
+[data-palette="crimson"] {
+  --bg-primary: #080808;
+  --bg-secondary: #151012;
+  --bg-surface: #22161a;
+  --bg-input: #191215;
+  --border-color: #381f26;
+  --border-focus: #c1121f;
+  --text-primary: #fbf5f5;
+  --text-secondary: #a89196;
+  --text-muted: #6e575b;
+  --accent-color: #c1121f;
+  --accent-hover: #de1a29;
+  --accent-gradient: linear-gradient(135deg, #de1a29 0%, #c1121f 100%);
+  --accent-glow: rgba(193, 18, 31, 0.25);
+  --header-bg: rgba(8, 8, 8, 0.9);
+}
+
+[data-palette="crimson"].light-theme,
+.light-theme[data-palette="crimson"] {
+  --bg-primary: #fdf5f5;
+  --bg-secondary: #ffffff;
+  --bg-surface: #fae8e9;
+  --bg-input: #ffffff;
+  --border-color: #f2cbcd;
+  --border-focus: #b0101c;
+  --text-primary: #200f12;
+  --text-secondary: #785a5e;
+  --text-muted: #9b797e;
+  --accent-color: #b0101c;
+  --accent-hover: #8e0b15;
+  --accent-gradient: linear-gradient(135deg, #cb1a27 0%, #b0101c 100%);
+  --accent-glow: rgba(176, 16, 28, 0.15);
+  --header-bg: rgba(253, 245, 245, 0.92);
+}
+
+/* 5. Ржаво-оранжевый (Rust Orange) */
+[data-palette="rust_orange"],
+[data-theme="amber"] {
+  --bg-primary: #180e0a;
+  --bg-secondary: #24150f;
+  --bg-surface: #351f16;
+  --bg-input: #20130d;
+  --border-color: #4c2d20;
+  --border-focus: #d96b27;
+  --text-primary: #fdf6f2;
+  --text-secondary: #b0998f;
+  --text-muted: #786258;
+  --accent-color: #d96b27;
+  --accent-hover: #f07e38;
+  --accent-gradient: linear-gradient(135deg, #f07e38 0%, #d96b27 100%);
+  --accent-glow: rgba(217, 107, 39, 0.25);
+  --header-bg: rgba(24, 14, 10, 0.9);
+}
+
+[data-palette="rust_orange"].light-theme,
+.light-theme[data-palette="rust_orange"] {
+  --bg-primary: #faf6f3;
+  --bg-secondary: #ffffff;
+  --bg-surface: #f3e8e1;
+  --bg-input: #ffffff;
+  --border-color: #e6d5ca;
+  --border-focus: #b85417;
+  --text-primary: #231610;
+  --text-secondary: #7a6358;
+  --text-muted: #9e8478;
+  --accent-color: #b85417;
+  --accent-hover: #964310;
+  --accent-gradient: linear-gradient(135deg, #d36420 0%, #b85417 100%);
+  --accent-glow: rgba(184, 84, 23, 0.15);
+  --header-bg: rgba(250, 246, 243, 0.92);
+}
+
+/* 6. Графитово-розовый (Graphite Pink) */
+[data-palette="graphite_pink"],
+[data-theme="cyber"] {
+  --bg-primary: #181818;
+  --bg-secondary: #222222;
+  --bg-surface: #2b2b2b;
+  --bg-input: #1f1f1f;
+  --border-color: #3b3b3b;
+  --border-focus: #c88e9b;
+  --text-primary: #f7f3f4;
+  --text-secondary: #a39598;
+  --text-muted: #6e6365;
+  --accent-color: #c88e9b;
+  --accent-hover: #db9fae;
+  --accent-gradient: linear-gradient(135deg, #db9fae 0%, #c88e9b 100%);
+  --accent-glow: rgba(200, 142, 155, 0.25);
+  --header-bg: rgba(24, 24, 24, 0.9);
+}
+
+[data-palette="graphite_pink"].light-theme,
+.light-theme[data-palette="graphite_pink"] {
+  --bg-primary: #faf6f7;
+  --bg-secondary: #ffffff;
+  --bg-surface: #f4ebed;
+  --bg-input: #ffffff;
+  --border-color: #e6d3d7;
+  --border-focus: #9c5867;
+  --text-primary: #241c1e;
+  --text-secondary: #7a666a;
+  --text-muted: #a08c90;
+  --accent-color: #9c5867;
+  --accent-hover: #7d4451;
+  --accent-gradient: linear-gradient(135deg, #b56b7c 0%, #9c5867 100%);
+  --accent-glow: rgba(156, 88, 103, 0.15);
+  --header-bg: rgba(250, 246, 247, 0.92);
 }
 
 /* --- Base Resets & Layout --- */

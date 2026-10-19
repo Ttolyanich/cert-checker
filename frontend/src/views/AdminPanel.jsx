@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { useTheme, THEMES } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
+import PaletteDropdown from '../components/PaletteDropdown';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Shield, Sun, Moon, Globe, LogOut, Users, 
-  Globe2, Bell, Plus, Edit2, Trash2, X, AlertCircle, ArrowUp, ArrowDown, RefreshCw, Send, Tv
+  Globe2, Bell, Plus, Edit2, Trash2, X, AlertCircle, ArrowUp, ArrowDown, RefreshCw, Send, Tv, KeyRound
 } from 'lucide-react';
 
 const AdminPanel = () => {
   const { user, token, logout } = useAuth();
   const { t, lang, toggleLanguage } = useLanguage();
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('sites'); // sites, notifications, users
@@ -261,7 +262,7 @@ const AdminPanel = () => {
         res = await fetch('/api/v1/users/', {
           method: 'POST',
           headers,
-          body: JSON.stringify({ ...userForm, global_role: 'admin' })
+          body: JSON.stringify({ ...userForm, role: userForm.role || 'admin' })
         });
       } else {
         const updatePayload = { ...userForm };
@@ -359,9 +360,15 @@ const AdminPanel = () => {
     setModalMode(mode);
     setSelectedItem(userItem);
     if (mode === 'add') {
-      setUserForm({ username: '', full_name: '', password: '', is_active: true });
+      setUserForm({ username: '', full_name: '', password: '', role: 'admin', is_active: true });
     } else {
-      setUserForm({ username: userItem.username, full_name: userItem.full_name || '', password: '', is_active: userItem.is_active });
+      setUserForm({ 
+        username: userItem.username, 
+        full_name: userItem.full_name || '', 
+        password: '', 
+        role: userItem.role || 'admin', 
+        is_active: userItem.is_active 
+      });
     }
     setModalType('user');
   };
@@ -394,8 +401,9 @@ const AdminPanel = () => {
                 {lang.toUpperCase()}
               </span>
             </button>
-            <button className="btn-icon" onClick={() => setTheme(theme === 'light' ? 'navy' : 'light')} title="Toggle Light/Dark">
-              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            <PaletteDropdown />
+            <button className="btn-icon" onClick={toggleTheme} title="Toggle Dark/Light">
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             <button className="btn-icon" onClick={logout} title={t('nav_logout')} style={{ color: 'var(--color-expired)' }}>
               <LogOut size={18} />
@@ -595,6 +603,8 @@ const AdminPanel = () => {
                       <tr>
                         <th>{t('user_name')}</th>
                         <th>{t('user_email')}</th>
+                        <th>{lang === 'ru' ? 'Тип' : 'Type'}</th>
+                        <th>{lang === 'ru' ? 'Роль' : 'Role'}</th>
                         <th>{t('user_status')}</th>
                         <th style={{ width: '120px', textAlign: 'right' }}>{t('tb_actions')}</th>
                       </tr>
@@ -603,7 +613,17 @@ const AdminPanel = () => {
                       {usersList.map(u => (
                         <tr key={u.id}>
                           <td><b>{u.full_name || '—'}</b></td>
-                          <td>{u.username}</td>
+                          <td><code>{u.username}</code></td>
+                          <td>
+                            <span className={`badge ${u.auth_source === 'ldap' ? 'warning' : 'unchecked'}`} style={{ fontSize: '0.75rem' }}>
+                              {u.auth_source === 'ldap' ? 'Active Directory' : (lang === 'ru' ? 'Локальный' : 'Local')}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`badge ${u.role === 'admin' ? 'valid' : 'unchecked'}`} style={{ fontSize: '0.75rem' }}>
+                              {u.role === 'admin' ? (lang === 'ru' ? 'Администратор' : 'Admin') : (lang === 'ru' ? 'Наблюдатель' : 'Viewer')}
+                            </span>
+                          </td>
                           <td>
                             <span className={`badge ${u.is_active ? 'valid' : 'expired'}`}>
                               {u.is_active ? t('user_active') : t('user_inactive')}
@@ -753,18 +773,75 @@ const AdminPanel = () => {
             {modalType === 'user' && (
               <form onSubmit={handleSaveUser}>
                 <div className="modal-body">
+                  {selectedItem?.auth_source === 'ldap' && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 14px',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border-color)',
+                      marginBottom: '16px',
+                      fontSize: '0.85rem',
+                      color: 'var(--text-secondary)'
+                    }}>
+                      <KeyRound size={16} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
+                      <span>
+                        {lang === 'ru' 
+                          ? 'Учетная запись Active Directory (пароль управляется контроллером домена, в панели не меняется).' 
+                          : 'Active Directory account (password managed on Domain Controller).'}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="form-group">
                     <label className="form-label">{t('user_email')}</label>
-                    <input type="text" className="form-control" required value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} />
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      required 
+                      disabled={modalMode === 'edit' && selectedItem?.auth_source === 'ldap'}
+                      value={userForm.username} 
+                      onChange={e => setUserForm({...userForm, username: e.target.value})} 
+                    />
                   </div>
                   <div className="form-group">
                     <label className="form-label">{t('user_name')}</label>
-                    <input type="text" className="form-control" value={userForm.full_name} onChange={e => setUserForm({...userForm, full_name: e.target.value})} />
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      value={userForm.full_name} 
+                      onChange={e => setUserForm({...userForm, full_name: e.target.value})} 
+                    />
                   </div>
+                  
+                  {selectedItem?.auth_source !== 'ldap' && (
+                    <div className="form-group">
+                      <label className="form-label">{t('user_password')}</label>
+                      <input 
+                        type="password" 
+                        className="form-control" 
+                        required={modalMode === 'add'} 
+                        placeholder={modalMode === 'edit' ? (lang === 'ru' ? 'Оставьте пустым, чтобы не менять' : 'Leave empty to keep unchanged') : ''}
+                        value={userForm.password} 
+                        onChange={e => setUserForm({...userForm, password: e.target.value})} 
+                      />
+                    </div>
+                  )}
+
                   <div className="form-group">
-                    <label className="form-label">{t('user_password')}</label>
-                    <input type="password" className="form-control" required={modalMode === 'add'} value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} />
+                    <label className="form-label">{lang === 'ru' ? 'Роль' : 'Role'}</label>
+                    <select 
+                      className="form-control" 
+                      value={userForm.role} 
+                      onChange={e => setUserForm({...userForm, role: e.target.value})}
+                    >
+                      <option value="admin">{lang === 'ru' ? 'Администратор (полный доступ)' : 'Administrator (Full Access)'}</option>
+                      <option value="viewer">{lang === 'ru' ? 'Наблюдатель (только просмотр)' : 'Viewer (Read-only)'}</option>
+                    </select>
                   </div>
+
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px' }}>
                     <input type="checkbox" id="isActive" checked={userForm.is_active} onChange={e => setUserForm({...userForm, is_active: e.target.checked})} />
                     <label htmlFor="isActive" className="form-label" style={{ margin: 0 }}>{t('user_active')}</label>

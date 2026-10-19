@@ -11,8 +11,10 @@ class User(Base):
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
     username = Column(String(255), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
+    hashed_password = Column(String(255), nullable=True) # nullable for LDAP users
     full_name = Column(String(255), nullable=True)
+    role = Column(String(50), default="admin", nullable=False) # "admin", "viewer"
+    auth_source = Column(String(50), default="local", nullable=False) # "local", "ldap"
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
@@ -26,12 +28,14 @@ class Site(Base):
     warning_days = Column(Integer, default=14, nullable=False)
     critical_days = Column(Integer, default=7, nullable=False)
     order_index = Column(Integer, default=0, nullable=False) # Used for manual sorting
-    status = Column(String(50), default="unchecked", nullable=False) # "valid", "warning", "expired", "error", "unchecked"
+    status = Column(String(50), default="unchecked", nullable=False) # "valid", "warning", "critical", "expired", "error", "unchecked"
     ssl_valid_from = Column(DateTime, nullable=True)
     ssl_valid_to = Column(DateTime, nullable=True)
     ssl_issuer = Column(String(255), nullable=True)
     last_error = Column(Text, nullable=True)
     last_checked = Column(DateTime, nullable=True)
+    last_alert_at = Column(DateTime, nullable=True) # Last time an alert was dispatched
+    last_alert_level = Column(String(50), nullable=True) # Level of last alert: "warning", "critical", "expired", "error"
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
 

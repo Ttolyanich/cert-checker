@@ -1,29 +1,38 @@
 version: '3.8'
 
 services:
-  backend:
-    image: ghcr.io/ttolyanich/cert-checker-backend:latest
-    container_name: cert-checker-backend
+  cert-checker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/ttolyanich/cert-checker:latest
+    container_name: cert-checker
     restart: always
+    ports:
+      - "8080:8000"
     environment:
       - DATABASE_URL=sqlite:////data/cert_checker.db
       - SECRET_KEY=prod_super_secret_key_change_me_in_env_file
       - ZABBIX_TOKEN=zabbix_secret_token
+      # --- Active Directory / LDAP ---
+      # - LDAP_ENABLED=true
+      # - LDAP_SERVER=ldap://10.11.4.254:389
+      # - LDAP_DOMAIN=corp.local
+      # - LDAP_BASE_DN=DC=corp,DC=local
+      # - LDAP_REQUIRED_GROUP=Domain Users
+      # - LDAP_ADMIN_GROUP=Domain Admins
+      # - LDAP_ADMIN_USERS=admin,sysadmin@corp.local
+      # - LDAP_BIND_USER=CN=svc_ldap,OU=Service,DC=corp,DC=local
+      # - LDAP_BIND_PASSWORD=ServicePassword
+      # --- SMTP Email Notifications ---
       # - SMTP_HOST=smtp.mail.ru
       # - SMTP_PORT=587
       # - SMTP_USER=alert@yourcompany.ru
       # - SMTP_PASSWORD=your_password
+      # - SMTP_TLS=True
+      # - EMAILS_FROM_EMAIL=alert@yourcompany.ru
     volumes:
       - db_data:/data
-
-  frontend:
-    image: ghcr.io/ttolyanich/cert-checker-frontend:latest
-    container_name: cert-checker-frontend
-    restart: always
-    ports:
-      - "8080:80"
-    depends_on:
-      - backend
 
 volumes:
   db_data:

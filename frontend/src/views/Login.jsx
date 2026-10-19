@@ -1,18 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
-import { Shield, Sun, Moon, Globe } from 'lucide-react';
+import PaletteDropdown from '../components/PaletteDropdown';
+import { Shield, Sun, Moon, Globe, KeyRound } from 'lucide-react';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [authConfig, setAuthConfig] = useState({ ldap_enabled: false, ldap_domain: null });
 
   const { login } = useAuth();
   const { t, lang, toggleLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+
+  useEffect(() => {
+    fetch('/api/v1/auth/config')
+      .then(res => res.json())
+      .then(data => {
+        if (data) setAuthConfig(data);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,7 +33,7 @@ const Login = () => {
     try {
       await login(username, password);
     } catch (err) {
-      setError(t('login_failed'));
+      setError(t('login_failed') || 'Invalid credentials');
       setSubmitting(false);
     }
   };
@@ -35,7 +46,11 @@ const Login = () => {
             <Shield size={32} />
           </div>
           <h2>{t('login_title')}</h2>
-          <p className="site-meta" style={{ marginTop: '4px' }}>{t('login_subtitle')}</p>
+          <p className="site-meta" style={{ marginTop: '4px' }}>
+            {authConfig.ldap_enabled 
+              ? (lang === 'ru' ? 'Вход по локальной учетной записи или Active Directory' : 'Local account or Active Directory domain login')
+              : t('login_subtitle')}
+          </p>
         </div>
 
         {error && (
@@ -54,7 +69,7 @@ const Login = () => {
               onChange={(e) => setUsername(e.target.value)}
               required
               autoComplete="username"
-              placeholder="admin"
+              placeholder={authConfig.ldap_enabled ? (authConfig.ldap_domain ? `admin или user@${authConfig.ldap_domain}` : 'admin или domain\\user') : 'admin'}
             />
           </div>
 
@@ -81,7 +96,29 @@ const Login = () => {
           </button>
         </form>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border-color)' }}>
+        {authConfig.ldap_enabled && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginTop: '16px',
+            padding: '8px 12px',
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
+            fontSize: '0.8rem',
+            color: 'var(--text-secondary)'
+          }}>
+            <KeyRound size={15} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
+            <span>
+              {lang === 'ru' 
+                ? 'Поддерживается сквозная доменная авторизация Active Directory' 
+                : 'Active Directory domain authentication supported'}
+            </span>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border-color)' }}>
           <button className="btn-icon" onClick={toggleLanguage} title="Switch Language">
             <Globe size={18} />
             <span style={{ fontSize: '0.75rem', fontWeight: 'bold', marginLeft: '4px' }}>
@@ -89,9 +126,12 @@ const Login = () => {
             </span>
           </button>
 
-          <button className="btn-icon" onClick={toggleTheme} title="Toggle Theme">
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <PaletteDropdown />
+            <button className="btn-icon" onClick={toggleTheme} title="Toggle Dark/Light">
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+          </div>
         </div>
       </div>
     </div>

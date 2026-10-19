@@ -53,11 +53,18 @@ def update_user(
     """
     Update a user. Admin only.
     """
+    if getattr(current_user, "role", "admin") != "admin":
+        raise HTTPException(status_code=403, detail="Admin permissions required")
     user = crud.get_user(db, user_id=user_id)
     if not user:
         raise HTTPException(
             status_code=404,
-            detail="The user with this username does not exist in the system.",
+            detail="The user does not exist in the system.",
+        )
+    if user.auth_source == "ldap" and user_in.password:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot set local password for an Active Directory / LDAP account.",
         )
     user = crud.update_user(db, user_id=user_id, user_update=user_in)
     return user

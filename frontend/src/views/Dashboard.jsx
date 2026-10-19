@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import PaletteDropdown from '../components/PaletteDropdown';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Shield, Sun, Moon, Globe, LogOut, RefreshCw, 
@@ -11,7 +12,7 @@ import {
 const Dashboard = () => {
   const { user, token, logout } = useAuth();
   const { t, lang, toggleLanguage } = useLanguage();
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const [sites, setSites] = useState([]);
@@ -142,8 +143,9 @@ const Dashboard = () => {
                 {lang.toUpperCase()}
               </span>
             </button>
-            <button className="btn-icon" onClick={() => setTheme(theme === 'light' ? 'navy' : 'light')} title="Toggle Light/Dark">
-              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            <PaletteDropdown />
+            <button className="btn-icon" onClick={toggleTheme} title="Toggle Dark/Light">
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             
             {token ? (

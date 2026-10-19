@@ -26,36 +26,56 @@ def read_sites(db: Session = Depends(get_db)) -> Any:
 @router.post("/check-all")
 def check_all_sites(db: Session = Depends(get_db)) -> Any:
     """
-    Trigger SSL checks for all sites. Publicly accessible.
+    Trigger concurrent SSL checks for all sites.
     """
+    from concurrent.futures import ThreadPoolExecutor
     sites_list = crud.get_sites(db)
-    for site in sites_list:
+    if not sites_list:
+        return {"status": "success", "message": "No sites to check"}
+
+    def check_site_item(site_item):
         try:
-            result = check_ssl(site.hostname, site.port)
-            site.status = result["status"]
-            site.ssl_valid_from = result["ssl_valid_from"]
-            site.ssl_valid_to = result["ssl_valid_to"]
-            site.ssl_issuer = result["ssl_issuer"]
-            site.last_error = result["last_error"]
-            site.last_checked = result["last_checked"]
-            
-            # Recalculate status based on thresholds
-            if site.status not in ["expired", "error"] and site.ssl_valid_to:
-                valid_to = site.ssl_valid_to
-                if valid_to.tzinfo is None:
-                    valid_to = valid_to.replace(tzinfo=timezone.utc)
-                now = datetime.now(timezone.utc)
-                delta = valid_to - now
-                days_remaining = delta.days
-                if days_remaining <= site.critical_days:
-                    site.status = "critical"
-                elif days_remaining <= site.warning_days:
-                    site.status = "warning"
-                    
-            db.commit()
-        except Exception:
-            pass
-    return {"status": "success", "message": "All sites checked"}
+            return (site_item.id, check_ssl(site_item.hostname, site_item.port))
+        except Exception as e:
+            return (site_item.id, {
+                "status": "error",
+                "ssl_valid_from": None,
+                "ssl_valid_to": None,
+                "ssl_issuer": None,
+                "last_error": str(e),
+                "last_checked": datetime.now(timezone.utc)
+            })
+
+    with ThreadPoolExecutor(max_workers=min(len(sites_list), 12)) as executor:
+        results = list(executor.map(check_site_item, sites_list))
+
+    result_map = {sid: res for sid, res in results}
+    now = datetime.now(timezone.utc)
+    for site in sites_list:
+        res = result_map.get(site.id)
+        if not res:
+            continue
+        site.status = res["status"]
+        site.ssl_valid_from = res["ssl_valid_from"]
+        site.ssl_valid_to = res["ssl_valid_to"]
+        site.ssl_issuer = res["ssl_issuer"]
+        site.last_error = res["last_error"]
+        site.last_checked = res["last_checked"]
+        
+        # Recalculate status based on thresholds
+        if site.status not in ["expired", "error"] and site.ssl_valid_to:
+            valid_to = site.ssl_valid_to
+            if valid_to.tzinfo is None:
+                valid_to = valid_to.replace(tzinfo=timezone.utc)
+            delta = valid_to - now
+            days_remaining = delta.days
+            if days_remaining <= site.critical_days:
+                site.status = "critical"
+            elif days_remaining <= site.warning_days:
+                site.status = "warning"
+                
+    db.commit()
+    return {"status": "success", "message": f"{len(sites_list)} sites checked successfully"}
 
 
 # --- Admin Site Endpoints ---
