@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     ZABBIX_TOKEN: str = "zabbix_secret_token"
     
     # Database
-    DATABASE_URL: str = "sqlite:///./cert_checker.db"
+    DATABASE_URL: str = "sqlite:////data/cert_checker.db"
     
     # Initial Admin Account
     FIRST_SUPERUSER_USERNAME: str = "admin"

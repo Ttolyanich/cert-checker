@@ -55,7 +55,14 @@ export const AuthProvider = ({ children }) => {
     });
 
     if (!response.ok) {
-      throw new Error('Login failed');
+      let errorMsg = 'Неверный логин или пароль';
+      try {
+        const errorData = await response.json();
+        if (errorData && errorData.detail) {
+          errorMsg = errorData.detail;
+        }
+      } catch (_) {}
+      throw new Error(errorMsg);
     }
 
     const data = await response.json();

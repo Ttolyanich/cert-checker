@@ -33,7 +33,7 @@ const Login = () => {
     try {
       await login(username, password);
     } catch (err) {
-      setError(t('login_failed') || 'Invalid credentials');
+      setError(err.message || t('login_failed') || 'Invalid credentials');
       setSubmitting(false);
     }
   };

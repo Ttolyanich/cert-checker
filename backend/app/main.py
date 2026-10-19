@@ -131,10 +131,33 @@ def check_all_sites_job():
     logger.info("Background SSL check completed.")
 
 
+def check_and_restore_database():
+    """
+    Checks if /data/cert_checker.db is missing or empty, and restores from candidate locations if available.
+    """
+    primary_db = "/data/cert_checker.db"
+    try:
+        os.makedirs("/data", exist_ok=True)
+        if not os.path.exists(primary_db) or os.path.getsize(primary_db) == 0:
+            candidates = [
+                "/data/data/cert_checker.db",
+                "/app/cert_checker.db",
+                "./cert_checker.db",
+            ]
+            for cand in candidates:
+                if os.path.exists(cand) and os.path.abspath(cand) != os.path.abspath(primary_db) and os.path.getsize(cand) > 0:
+                    logger.info(f"Auto-restoring database from {cand} to {primary_db}...")
+                    import shutil
+                    shutil.copy2(cand, primary_db)
+                    break
+    except Exception as e:
+        logger.warning(f"Failed to check/restore database: {e}")
+
 def run_database_migrations():
     """
     Performs auto-migrations for missing columns across SQLite database versions.
     """
+    check_and_restore_database()
     logger.info("Checking database schema and migrations...")
     Base.metadata.create_all(bind=engine)
     

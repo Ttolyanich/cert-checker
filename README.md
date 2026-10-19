@@ -129,3 +129,45 @@
 Панель станет доступна по адресу `http://<IP_сервера>:8080`.
 * По умолчанию создается локальный администратор: `admin` / `admin123`.
 * Если включен LDAP, доступен бесшовный вход под доменными учетными записями AD.
+
+---
+
+## 🔄 Обновление с предыдущих версий (Сохранение базы данных и LDAP)
+
+Если вы обновляете существующую установку Cert-Checker (где ранее использовались два раздельных контейнера и именованный Docker-том `db_data`):
+
+1. **Автоматическое подключение существующей базы данных:**
+   В обновленном `docker-compose.yml` предусмотрена автоматическая обратная совместимость:
+   * Если в `.env` параметр `DATA_PATH` не задан (или закомментирован), Docker автоматически подключит существующий том `cert-checker_db_data`.
+   * Если вы хотите использовать локальную папку на хосте `./data`:
+     ```bash
+     mkdir -p ./data
+     # Скопируйте базу из существующего тома Docker:
+     cp /var/lib/docker/volumes/*cert*db_data/_data/cert_checker.db ./data/
+     chmod 666 ./data/cert_checker.db
+     ```
+
+2. **Настройка доменного входа в `.env`:**
+   Добавьте в ваш существующий файл `.env` параметры Active Directory (пример):
+   ```env
+   LDAP_ENABLED=true
+   LDAP_SERVER=ldap://10.11.4.254:389
+   LDAP_DOMAIN=corp.local
+   LDAP_BASE_DN=DC=corp,DC=local
+   LDAP_REQUIRED_GROUP=
+   LDAP_ADMIN_GROUP=Domain Admins
+   LDAP_BIND_USER=svc_ldap@corp.local
+   LDAP_BIND_PASSWORD=YourServicePassword
+   ```
+
+3. **Перезапуск контейнера:**
+   ```bash
+   docker compose down
+   docker compose up -d --build
+   ```
+
+4. **Проверка логов:**
+   ```bash
+   docker logs -f cert-checker
+   ```
+   При первом входе под доменным пользователем в логах отобразятся подробные статусы попыток подключения и привязки к AD.

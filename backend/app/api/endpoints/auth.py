@@ -109,12 +109,13 @@ def login_access_token(
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=ldap_err or "Invalid username or password",
+                detail=ldap_err or "Неверный корпоративный email/логин или пароль Active Directory",
             )
 
+    hint = " (Доменная авторизация Active Directory отключена в .env)" if ("@" in input_username or "\\" in input_username) else ""
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail="Incorrect username or password",
+        detail=f"Неверное имя пользователя или пароль{hint}",
     )
 
 @router.get("/me", response_model=schemas.UserOut)
