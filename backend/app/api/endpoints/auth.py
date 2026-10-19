@@ -75,7 +75,7 @@ def login_access_token(
             if not db_user:
                 db_user = models.User(
                     username=resolved_username.lower() if resolved_username else input_username.lower(),
-                    hashed_password=None,
+                    hashed_password="!ldap_managed_account!",
                     full_name=display_name or input_username,
                     role=ad_role or "admin",
                     auth_source="ldap",
